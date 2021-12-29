@@ -2,37 +2,36 @@ using FluentAssertions;
 using Validation.Attributes;
 using Xunit;
 
-namespace Validation.Test.Attributes
+namespace Validation.Test.Attributes;
+
+public class LettersOnlyAttributeTest
 {
-    public class LettersOnlyAttributeTest
+    private readonly LettersOnlyAttribute _uut;
+
+    public LettersOnlyAttributeTest()
     {
-        private readonly LettersOnlyAttribute _uut;
+        _uut = new LettersOnlyAttribute();
+    }
 
-        public LettersOnlyAttributeTest()
-        {
-            _uut = new LettersOnlyAttribute();
-        }
+    [Theory]
+    [InlineData("ValidInput")]
+    [InlineData("validinput")]
+    [InlineData("VALIDINPUT")]
+    public void Should_BeValid(string input)
+    {
+        var result = _uut.IsValid(input);
 
-        [Theory]
-        [InlineData("ValidInput")]
-        [InlineData("validinput")]
-        [InlineData("VALIDINPUT")]
-        public void Should_BeValid(string input)
-        {
-            var result = _uut.IsValid(input);
+        result.Should().Be(true);
+    }
 
-            result.Should().Be(true);
-        }
+    [Theory]
+    [InlineData("Invalid Input")]
+    [InlineData("invalid_input")]
+    [InlineData("invalidinput0")]
+    public void Should_BeInvalid(string input)
+    {
+        var result = _uut.IsValid(input);
 
-        [Theory]
-        [InlineData("Invalid Input")]
-        [InlineData("invalid_input")]
-        [InlineData("invalidinput0")]
-        public void Should_BeInvalid(string input)
-        {
-            var result = _uut.IsValid(input);
-
-            result.Should().Be(false);
-        }
+        result.Should().Be(false);
     }
 }
