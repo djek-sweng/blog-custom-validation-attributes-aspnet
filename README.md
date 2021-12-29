@@ -17,11 +17,10 @@ At the beginning create a new class including the associated file and then name 
 ```csharp
 // File: LettersOnlyAttribute.cs
 
-namespace Validation.Attributes
+namespace Validation.Attributes;
+
+public class LettersOnlyAttribute
 {
-  public class LettersOnlyAttribute
-  {
-  }
 }
 ```
 
@@ -51,11 +50,14 @@ The choice of `AttributeTargets` defines the applicability of the validator to t
 Now overwrite the `IsValid` method of the base class `ValidationAttribute`. First you convert to the target data type and then implement your validation logic.
 
 ```csharp
-public override bool IsValid(object value)
+public override bool IsValid(object? value)
 {
-  var text = (string)value;
+    if (value is null)
+        return false;
 
-  return IsLettersOnly(text);
+    var text = (string)value;
+
+    return IsLettersOnly(text);
 }
 ```
 
@@ -66,9 +68,9 @@ The return value of the validation logic must be of the data type `bool`. Here y
 
 private static bool IsLettersOnly(string text)
 {
-  var regex = new Regex("^[a-zA-Z]*$");
+    var regex = new Regex("^[a-zA-Z]*$");
 
-  return regex.IsMatch(text);
+    return regex.IsMatch(text);
 }
 ```
 
@@ -78,9 +80,9 @@ Optionally, you can also overwrite the `FormatErrorMessage` method. So you can m
 ```csharp
 public override string FormatErrorMessage(string name)
 {
-  return string.Format(CultureInfo.CurrentCulture,
-    $"The property, field or parameter '{name}' is invalid, " +
-     "because only letters are allowed.");
+    return string.Format(CultureInfo.CurrentCulture,
+        $"The property, field or parameter '{name}' is invalid, " +
+         "because only letters are allowed.");
 }
 ```
 
@@ -92,15 +94,15 @@ using FluentAssertions;
 using Validation.Attributes;
 using Xunit;
 
-namespace Validation.Test.Attributes
+namespace Validation.Test.Attributes;
+
+public class LettersOnlyAttributeTest
 {
-  public class LettersOnlyAttributeTest
-  {
     private readonly LettersOnlyAttribute _uut;
 
     public LettersOnlyAttributeTest()
     {
-      _uut = new LettersOnlyAttribute();
+        _uut = new LettersOnlyAttribute();
     }
 
     [Theory]
@@ -108,11 +110,10 @@ namespace Validation.Test.Attributes
     [InlineData("Invalid_Input", false)]
     public void Test_IsValid(string input, bool result)
     {
-      var actual = _uut.IsValid(input);
+        var actual = _uut.IsValid(input);
 
-      actual.Should().Be(result);
+        actual.Should().Be(result);
     }
-  }
 }
 ```
 
@@ -125,40 +126,38 @@ You place the validator directly in the `User` data model.
 ```csharp
 public class User
 {
-  [LettersOnly]
-  public string Name { get; set; }
+    [LettersOnly]
+    public string? Name { get; set; }
 
-  public int Age { get; set; }
+    public int Age { get; set; }
 }
 ```
 
 The data is transferred to the web-API via the controller `TestController` and processed there.
 
 ```csharp
-namespace WebApi.Controllers
+namespace WebApi.Controllers;
+
+[ApiController]
+public class TestController : ControllerBase
 {
-  [ApiController]
-  public class TestController : ControllerBase
-  {
     public TestController()
     {
     }
 
-    [HttpPost]
-    [Route("api/test-user")]
+    [HttpPost("api/test-user")]
     public IActionResult TestUser([FromBody] User user)
     {
-      /* Place your business code here. */
+        /* Place your business code here. */
 
-      return Ok(user);
+        return Ok(user);
     }
-  }
 }
 ```
 
 The method named `TestUser` corresponds to a HTTP POST request with data transfer via the request body.
 
-```bash
+```sh
 curl -X POST "https://localhost:5001/api/test-user" \
      -H "accept: */*" \
      -H "Content-Type: application/json" \
@@ -169,19 +168,18 @@ curl -X POST "https://localhost:5001/api/test-user" \
 You also have the option of integrating the validator directly on a parameter of your controller method.
 
 ```csharp
-[HttpPost]
-[Route("api/test-letters-only")]
+[HttpPost("api/test-letters-only")]
 public IActionResult TestLettersOnly([FromQuery] [LettersOnly] string text)
 {
-  /* Place your business code here. */
+    /* Place your business code here. */
 
-  return Ok(text);
+    return Ok(text);
 }
 ```
 
 The method named `TestLettersOnly` corresponds to a HTTP POST request with data transfer via the request URL.
 
-```bash
+```sh
 curl -X POST "https://localhost:5001/api/test-letters-only?text=ArthurDent" \
      -H "accept: */*" \
      -d ""
@@ -190,8 +188,8 @@ curl -X POST "https://localhost:5001/api/test-letters-only?text=ArthurDent" \
 #### **Integration test**
 Start the web-API application and execute the shown HTTP requests via your console. If the validator accepts your data entry, then your business code will be executed. In the example shown, the web-API simply sends back the input in the HTTP response body.
 
-```json
-// Status code 200 (Ok) - Response body:
+```sh
+# Status code 200 (Ok) - Response body:
 {
   "name": "ArthurDent",
   "age": 42
@@ -200,8 +198,8 @@ Start the web-API application and execute the shown HTTP requests via your conso
 
 However, if the validator rejects your data entry because you have violated the test criterion from the `IsLettersOnly` method, the controller will reject your HTTP request. The controller will then respond with the status code 400 (Bad Request) and will return the following response body. Your business code will not be executed.
 
-```json
-// Status code 400 (Bad Request) - Response body:
+```sh
+# Status code 400 (Bad Request) - Response body:
 {
   "type": "https://tools.ietf.org/html/rfc7231#section-6.5.1",
   "title": "One or more validation errors occurred.",
